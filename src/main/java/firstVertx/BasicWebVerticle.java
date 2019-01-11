@@ -56,13 +56,25 @@ public class BasicWebVerticle extends AbstractVerticle{
 	public void start() throws Exception {
 		LOGGER.info("Verticle basic Verticle started");
 		Router router = Router.router(vertx);
+		router.route("/api*").handler(this::DefaultHandlerAllEndPts);
 		router.route("/api/v1/products*").handler(BodyHandler.create()); 
 		router.get("/api/v1/products").handler(this::getAllProducts) ; 
 		router.get("/api/v1/products/:id").handler(this::getProductById) ;
 		router.post("/api/v1/products").handler(this::addProduct) ;
 		router.delete("/api/v1/products/:id").handler(this::deleteProduct) ;
 		router.route().handler(StaticHandler.create().setCachingEnabled(false));
-		vertx.createHttpServer().requestHandler(router::accept).listen(config().getInteger("http.port",8080));
+		vertx.createHttpServer().requestHandler(router::accept).listen(config().getInteger("http.port"), asycResult -> { 
+			if ( asycResult.succeeded()){ 
+				
+				LOGGER.info("connection succeded . Listning to port : "+ config().getInteger("http.port").toString() );
+				
+			}else{ 
+				
+				LOGGER.error("Could not start the Http server : " + asycResult.cause() );
+			}
+		}
+					
+				);
 	}	
 
 	@Override
@@ -131,5 +143,16 @@ public class BasicWebVerticle extends AbstractVerticle{
 		routingContext.response().setStatusCode(200).putHeader("content-type", "application/json")
 		.end(Json.encodePrettily(deltedCust)) ;
 		
+	}
+	
+	private void DefaultHandlerAllEndPts(RoutingContext routingContext){ 
+		
+		String authToken = routingContext.request().headers().get("AuthToken") ; 
+		if (!authToken.equals("123") ){ 
+			routingContext.response().setStatusCode(400).putHeader("content-type", "application/json").end(Json.encodePrettily(new JsonObject().put("error", "unauthorized"))); ; 
+		}else 
+		{
+			routingContext.next(); 
+		}
 	}
 }
