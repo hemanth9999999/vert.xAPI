@@ -11,6 +11,7 @@ import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.web.Cookie;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -147,7 +148,16 @@ public class BasicWebVerticle extends AbstractVerticle{
 	
 	private void DefaultHandlerAllEndPts(RoutingContext routingContext){ 
 		
-		String authToken = routingContext.request().headers().get("AuthToken") ; 
+		String authToken = routingContext.request().headers().get("AuthToken") ;
+		Cookie cookie = routingContext.getCookie("name") ; 
+		if (cookie ==null ){ 
+			cookie = Cookie.cookie("name", "Hemanth") ; 
+			cookie.setPath("/");
+			cookie.setMaxAge(365*24*60*60) ;
+			routingContext.addCookie(cookie) ; 
+			
+		}
+		
 		if (!authToken.equals("123") ){ 
 			routingContext.response().setStatusCode(400).putHeader("content-type", "application/json").end(Json.encodePrettily(new JsonObject().put("error", "unauthorized"))); ; 
 		}else 
